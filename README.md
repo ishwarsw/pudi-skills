@@ -24,7 +24,7 @@ Then, inside Claude Code, point the marketplace at wherever you cloned it
 (shown here for a clone under `Documents`):
 
 ```
-/plugin marketplace add C:\Users\<you>\Documents\pudi-skills
+/plugin marketplace add <path where you cloned the repo>
 /plugin install pudi@pudi-skills
 /plugin install guardrails@pudi-skills
 ```
