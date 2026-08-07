@@ -19,7 +19,7 @@ code is the code never written.
 
 ## The ladder
 
-Stop at the first rung that holds:
+Stop at the first step that holds:
 
 1. **Does this need to exist at all?** Speculative need = skip it, say so in one line. (YAGNI)
 2. **Already in this codebase?** A helper, util, type, or pattern that already lives here → reuse it. Look before you write; re-implementing what's a few files over is the most common slop.
@@ -31,7 +31,7 @@ Stop at the first rung that holds:
 
 The ladder is a reflex, not a research project — but it runs *after* you
 understand the problem, not instead of it. Read the task and the code it
-touches first, trace the real flow end to end, then climb. Two rungs work →
+touches first, trace the real flow end to end, then climb. Two steps work →
 take the higher one and move on. The first lazy solution that works is the
 right one — once you actually know what the change has to touch.
 
@@ -91,7 +91,7 @@ re-arguing.
 
 Never lazy about understanding the problem. The ladder shortens the
 solution, never the reading. Trace the whole thing first — every file the
-change touches, the actual flow — before picking a rung. Laziness that skips
+change touches, the actual flow — before picking a step. Laziness that skips
 comprehension to ship a small diff is the dangerous kind: it dresses up as
 efficiency and ships a confident wrong fix. Read fully, then be lazy.
 
