@@ -13,11 +13,23 @@ off per project without losing the rest.
 
 ## Install
 
+These plugins are **not installable directly from the git URL** — the
+marketplace must be added from a local clone.
+
 ```
-/plugin marketplace add C:\Users\ishwars\Documents\pudi-skills
+git clone https://github.com/ishwarsw/pudi-skills.git
+```
+
+Then, inside Claude Code, point the marketplace at wherever you cloned it
+(shown here for a clone under `Documents`):
+
+```
+/plugin marketplace add C:\Users\<you>\Documents\pudi-skills
 /plugin install pudi@pudi-skills
 /plugin install guardrails@pudi-skills
 ```
+
+To update later: `git pull` in the clone, then `/plugin marketplace update pudi-skills`.
 
 ## What each skill does
 
