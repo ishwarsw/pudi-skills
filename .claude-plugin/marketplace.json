@@ -1,0 +1,30 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "pudi-skills",
+  "description": "Ishwar's Claude Code skills: pudi (do less) and guardrails (engineering standards).",
+  "owner": {
+    "name": "Ishwar Swarnapudi"
+  },
+  "plugins": [
+    {
+      "name": "pudi",
+      "source": "./pudi",
+      "description": "Laziest-solution-that-works skills: the YAGNI ladder, an over-engineering reviewer, a shortcut-debt ledger, and a PRD writer.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Ishwar Swarnapudi"
+      },
+      "keywords": ["yagni", "simplicity", "code-review", "prd"]
+    },
+    {
+      "name": "guardrails",
+      "source": "./guardrails",
+      "description": "Personal engineering standards with a PreToolUse hook that mechanically blocks leading-underscore names, __main__ blocks, __all__, and unpinned dependencies.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Ishwar Swarnapudi"
+      },
+      "keywords": ["standards", "lint", "hooks", "policy"]
+    }
+  ]
+}

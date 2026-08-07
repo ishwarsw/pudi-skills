@@ -1,0 +1,10 @@
+{
+  "name": "pudi",
+  "version": "0.1.0",
+  "description": "Laziest-solution-that-works skills: the YAGNI ladder, an over-engineering reviewer, a shortcut-debt ledger, and a PRD writer.",
+  "author": {
+    "name": "Ishwar Swarnapudi"
+  },
+  "keywords": ["yagni", "simplicity", "code-review", "prd"],
+  "license": "MIT"
+}

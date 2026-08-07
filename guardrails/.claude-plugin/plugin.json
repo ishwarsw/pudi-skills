@@ -1,0 +1,10 @@
+{
+  "name": "guardrails",
+  "version": "0.1.0",
+  "description": "Personal engineering standards with a PreToolUse hook that mechanically blocks leading-underscore names, __main__ blocks, __all__, and unpinned dependencies.",
+  "author": {
+    "name": "Ishwar Swarnapudi"
+  },
+  "keywords": ["standards", "lint", "hooks", "policy"],
+  "license": "MIT"
+}
