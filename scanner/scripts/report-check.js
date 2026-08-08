@@ -22,11 +22,11 @@ process.stdin.on("end", () => {
 
   const violations = [];
   if (isGeneratedReport(filePath)) checkSelfContained(content, violations);
-  if (!isFixture(filePath)) checkIntactSecret(content, violations);
+  if (!holdsTestData(filePath)) checkIntactSecret(content, violations);
 
   if (violations.length > 0) {
     process.stderr.write(
-      "pudi report-check violation — blocked:\n" +
+      "scanner report-check violation — blocked:\n" +
         violations.map((v) => "  - " + v).join("\n") +
         "\n"
     );
@@ -56,16 +56,26 @@ function addedLines(oldString, newString) {
 }
 
 // Scoped by path so ordinary web work is untouched: only files that are
-// already, by convention, generated scan output.
+// already, by convention, generated scan output. Both patterns anchor with
+// (^|/) because Claude writes repo-relative paths far more often than absolute
+// ones — requiring a leading slash silently skipped `reports/index.html` and
+// `dashboard.html`, the two most likely paths of all.
 function isGeneratedReport(filePath) {
   const norm = filePath.replace(/\\/g, "/").toLowerCase();
   if (!norm.endsWith(".html")) return false;
-  if (/\/[a-z0-9-]*reports?\//.test(norm)) return true;
-  return /\/(dashboard|report|summary|scan-report|quality-report)\.html$/.test(norm);
+  if (/(^|\/)[a-z0-9-]*reports?\//.test(norm)) return true;
+  return /(^|\/)(dashboard|report|summary|scan-report|quality-report)\.html$/.test(norm);
 }
 
-function isFixture(filePath) {
-  return /(^|[\\/])(fixtures|__fixtures__)[\\/]/i.test(filePath.replace(/\\/g, "/"));
+// Where deliberately fake credentials legitimately live. Test directories are
+// exempt alongside fixtures because a secret check that blocks its own test
+// suite cannot be tested, and a hook nobody can test gets uninstalled. This is
+// a real widening of the hole: a genuine key pasted into test/ is not caught
+// here, and CI secret scanning remains the actual backstop.
+function holdsTestData(filePath) {
+  return /(^|\/)(fixtures|__fixtures__|testdata|tests?|__tests__|spec)\//i.test(
+    filePath.replace(/\\/g, "/")
+  );
 }
 
 function checkSelfContained(content, violations) {
@@ -90,7 +100,11 @@ function checkSelfContained(content, violations) {
 // Pattern-certain credentials only. Heuristics belong in the scanner's security
 // analyzer, where a false positive costs a finding; here it would cost a write.
 function checkIntactSecret(content, violations) {
-  if (/\bAKIA[0-9A-Z]{16}\b/.test(content)) {
+  // AWS publishes placeholder key ids that end in EXAMPLE. A value AWS prints
+  // in its own docs is not a credential, and blocking it makes every security
+  // note that quotes those docs unwritable.
+  const keyIds = content.match(/\bAKIA[0-9A-Z]{16}\b/g) || [];
+  if (keyIds.some((keyId) => !keyId.endsWith("EXAMPLE"))) {
     violations.push(
       "intact AWS access key id pattern — mask it (first/last 3 chars) or split the literal; only a fixture corpus holds intact patterns"
     );

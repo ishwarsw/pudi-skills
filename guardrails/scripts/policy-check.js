@@ -3,6 +3,8 @@
 // rule 7 hard rules from skills/guardrails/SKILL.md regardless of whether the
 // skill was triggered by description-matching. Exit 2 + stderr = block.
 
+const DEPENDENCY_BLOCKS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
+
 const chunks = [];
 process.stdin.on("data", (chunk) => chunks.push(chunk));
 process.stdin.on("end", () => {
@@ -115,8 +117,19 @@ function checkUnpinnedDependency(content, filePath, violations) {
 function dependencyArrayLines(content) {
   const collected = [];
   let depth = 0;
+  let insideDependencyTable = false;
   for (const line of content.split("\n")) {
-    const opensHere = /^\s*(?:dependencies|.*-dependencies|dev-dependencies)\s*=\s*\[/.test(line);
+    // PEP 621 also spells extras as a table, where the keys are group names
+    // rather than "dependencies": [project.optional-dependencies] / dev = [...].
+    // Matching only `dependencies = [` missed every dependency written that way.
+    const tableHeader = depth === 0 && line.match(/^\s*\[([^\]"']+)\]\s*$/);
+    if (tableHeader) {
+      insideDependencyTable = /(^|\.)(optional-)?dependencies$/.test(tableHeader[1].trim());
+      continue;
+    }
+    const opensHere =
+      /^\s*(?:dependencies|.*-dependencies|dev-dependencies)\s*=\s*\[/.test(line) ||
+      (insideDependencyTable && /=\s*\[/.test(line));
     if (depth > 0 || opensHere) {
       collected.push(opensHere ? line.slice(line.indexOf("[")) : line);
       depth += (line.match(/\[/g) || []).length - (line.match(/\]/g) || []).length;
@@ -127,13 +140,37 @@ function dependencyArrayLines(content) {
 }
 
 function checkPackageJsonPins(content, violations) {
-  for (const line of content.split("\n")) {
-    const match = line.match(/"([A-Za-z0-9@/_.-]+)"\s*:\s*"([^"]+)"/);
-    if (!match) continue;
-    const version = match[2];
+  for (const [name, version] of packageJsonDependencies(content)) {
     if (/^[\^~><]/.test(version) || version === "*" || version === "latest" || version === "") {
-      violations.push(`unpinned dependency "${match[1]}": "${version}" in package.json (guardrails rule 7 — pin exact versions)`);
+      violations.push(`unpinned dependency "${name}": "${version}" in package.json (guardrails rule 7 — pin exact versions)`);
     }
+  }
+}
+
+// package.json is JSON, so parse it and read only the dependency maps. A line
+// scan cannot tell "jest": "^29.0.0" from "node": ">=18" under engines, and
+// engines is in most real package.json files — that made ordinary writes fail.
+function packageJsonDependencies(content) {
+  try {
+    const parsed = JSON.parse(content);
+    return DEPENDENCY_BLOCKS.flatMap((block) => Object.entries(parsed[block] || {}));
+  } catch {
+    // An Edit delivers only added lines, which never parse as JSON. Fall back to
+    // tracking the enclosing block by name and skip any entry whose block cannot
+    // be determined — missing one beats blocking a legitimate write.
+    const found = [];
+    let insideDependencies = false;
+    for (const line of content.split("\n")) {
+      const blockHeader = line.match(/"([A-Za-z]+)"\s*:\s*\{/);
+      if (blockHeader) {
+        insideDependencies = DEPENDENCY_BLOCKS.includes(blockHeader[1]);
+        continue;
+      }
+      if (/^\s*\}/.test(line)) insideDependencies = false;
+      const entry = insideDependencies && line.match(/"([@A-Za-z0-9/_.-]+)"\s*:\s*"([^"]*)"/);
+      if (entry) found.push([entry[1], entry[2]]);
+    }
+    return found;
   }
 }
 
