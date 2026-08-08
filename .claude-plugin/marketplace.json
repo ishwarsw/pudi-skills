@@ -1,20 +1,30 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "pudi-skills",
-  "description": "Ishwar's Claude Code plugins: pudi (build less), guardrails (engineering standards), scanner (code-quality toolchain).",
+  "description": "Ishwar's Claude Code plugins: lean (build less), guardrails (engineering standards), devops (infrastructure YAML and triage), scanner (code-quality toolchain), prd (product requirements).",
   "owner": {
     "name": "Ishwar Swarnapudi"
   },
   "plugins": [
     {
-      "name": "pudi",
-      "source": "./pudi",
-      "description": "Laziest-solution-that-works skills: the YAGNI ladder, an over-engineering reviewer, a shortcut-debt ledger, and a PRD writer. Ships a PostToolUse hook that warns when an edit makes a Python file measurably more complex.",
-      "version": "0.3.0",
+      "name": "lean",
+      "source": "./lean",
+      "description": "Build-less discipline: the YAGNI ladder, an over-engineering reviewer with a shortcut-debt ledger, and a codebase-convention reader. Ships a PostToolUse hook that warns when an edit makes a Python file measurably more complex.",
+      "version": "0.1.0",
       "author": {
         "name": "Ishwar Swarnapudi"
       },
-      "keywords": ["yagni", "simplicity", "code-review", "prd", "complexity", "hooks"]
+      "keywords": ["yagni", "simplicity", "code-review", "complexity", "hooks"]
+    },
+    {
+      "name": "prd",
+      "source": "./prd",
+      "description": "13-section PRD structure with testable acceptance criteria and a three-persona review loop. Split out from lean because it fires on PRD requests only, not on every coding task.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Ishwar Swarnapudi"
+      },
+      "keywords": ["prd", "product", "requirements", "acceptance-criteria"]
     },
     {
       "name": "guardrails",
@@ -29,12 +39,22 @@
     {
       "name": "scanner",
       "source": "./scanner",
-      "description": "Code-quality scanner toolchain: add one analyzer behind a design gate, render self-contained report dashboards, and rank risk hotspots from churn and complexity. Ships a PreToolUse hook that blocks network-dependent report HTML and intact credential patterns. Only useful in a repo that has a scanner.",
-      "version": "0.1.0",
+      "description": "Code-quality scanner toolchain: add one analyzer behind a design gate, render self-contained report dashboards, rank risk hotspots from churn and complexity, and remediate high-confidence findings with a before/after re-scan. Ships a PreToolUse hook that blocks network-dependent report HTML and intact credential patterns. Only useful in a repo that has a scanner.",
+      "version": "0.2.0",
       "author": {
         "name": "Ishwar Swarnapudi"
       },
       "keywords": ["scanner", "quality", "static-analysis", "hotspots", "reports", "hooks"]
+    },
+    {
+      "name": "devops",
+      "source": "./devops",
+      "description": "Write and debug infrastructure YAML — Kubernetes, GitHub Actions, docker-compose, Terraform — plus runtime triage playbooks. Ships a PreToolUse hook that blocks YAML which parses fine and means the wrong thing: unquoted version floats, tab indentation, and mutable image tags.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Ishwar Swarnapudi"
+      },
+      "keywords": ["devops", "yaml", "kubernetes", "ci", "docker", "debugging", "hooks"]
     }
   ]
 }
