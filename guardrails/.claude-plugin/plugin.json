@@ -1,7 +1,7 @@
 {
   "name": "guardrails",
-  "version": "0.1.0",
-  "description": "Personal engineering standards with a PreToolUse hook that mechanically blocks leading-underscore names, __main__ blocks, __all__, and unpinned dependencies.",
+  "version": "0.2.0",
+  "description": "Personal engineering standards with a PreToolUse hook that mechanically blocks leading-underscore names, __main__ blocks, __all__, and unpinned dependencies across requirements.txt, pyproject.toml, and package.json.",
   "author": {
     "name": "Ishwar Swarnapudi"
   },
