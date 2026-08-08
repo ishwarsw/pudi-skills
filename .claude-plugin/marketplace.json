@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "pudi-skills",
-  "description": "Ishwar's Claude Code skills: pudi (do less) and guardrails (engineering standards).",
+  "description": "Ishwar's Claude Code plugins: pudi (build less), guardrails (engineering standards), scanner (code-quality toolchain).",
   "owner": {
     "name": "Ishwar Swarnapudi"
   },
@@ -9,22 +9,32 @@
     {
       "name": "pudi",
       "source": "./pudi",
-      "description": "Laziest-solution-that-works skills: the YAGNI ladder, an over-engineering reviewer, a shortcut-debt ledger, a PRD writer, and three code-quality scanner skills with hooks that block network-dependent report dashboards and intact credential patterns.",
-      "version": "0.2.0",
+      "description": "Laziest-solution-that-works skills: the YAGNI ladder, an over-engineering reviewer, a shortcut-debt ledger, and a PRD writer. Ships a PostToolUse hook that warns when an edit makes a Python file measurably more complex.",
+      "version": "0.3.0",
       "author": {
         "name": "Ishwar Swarnapudi"
       },
-      "keywords": ["yagni", "simplicity", "code-review", "prd", "scanner", "quality", "hooks"]
+      "keywords": ["yagni", "simplicity", "code-review", "prd", "complexity", "hooks"]
     },
     {
       "name": "guardrails",
       "source": "./guardrails",
-      "description": "Personal engineering standards with a PreToolUse hook that mechanically blocks leading-underscore names, __main__ blocks, __all__, and unpinned dependencies.",
-      "version": "0.1.0",
+      "description": "Personal engineering standards with a PreToolUse hook that mechanically blocks leading-underscore names, __main__ blocks, __all__, and unpinned dependencies across requirements.txt, pyproject.toml, and package.json.",
+      "version": "0.2.0",
       "author": {
         "name": "Ishwar Swarnapudi"
       },
       "keywords": ["standards", "lint", "hooks", "policy"]
+    },
+    {
+      "name": "scanner",
+      "source": "./scanner",
+      "description": "Code-quality scanner toolchain: add one analyzer behind a design gate, render self-contained report dashboards, and rank risk hotspots from churn and complexity. Ships a PreToolUse hook that blocks network-dependent report HTML and intact credential patterns. Only useful in a repo that has a scanner.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Ishwar Swarnapudi"
+      },
+      "keywords": ["scanner", "quality", "static-analysis", "hotspots", "reports", "hooks"]
     }
   ]
 }
