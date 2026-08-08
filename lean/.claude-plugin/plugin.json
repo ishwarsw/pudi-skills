@@ -1,10 +1,10 @@
 {
-  "name": "pudi",
-  "version": "0.3.0",
-  "description": "Laziest-solution-that-works skills: the YAGNI ladder, an over-engineering reviewer, a shortcut-debt ledger, and a PRD writer. Ships a PostToolUse hook that warns when an edit makes a Python file measurably more complex.",
+  "name": "lean",
+  "version": "0.1.0",
+  "description": "Build-less discipline: the YAGNI ladder, an over-engineering reviewer with a shortcut-debt ledger, and a codebase-convention reader. Ships a PostToolUse hook that warns when an edit makes a Python file measurably more complex.",
   "author": {
     "name": "Ishwar Swarnapudi"
   },
-  "keywords": ["yagni", "simplicity", "code-review", "prd", "complexity", "hooks"],
+  "keywords": ["yagni", "simplicity", "code-review", "complexity", "hooks"],
   "license": "MIT"
 }

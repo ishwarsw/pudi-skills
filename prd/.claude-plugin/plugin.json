@@ -1,0 +1,10 @@
+{
+  "name": "prd",
+  "version": "0.1.0",
+  "description": "13-section PRD structure with testable acceptance criteria and a three-persona review loop (engineer, product director, UX researcher). Split out from lean because it fires on PRD requests only, not on every coding task.",
+  "author": {
+    "name": "Ishwar Swarnapudi"
+  },
+  "keywords": ["prd", "product", "requirements", "acceptance-criteria"],
+  "license": "MIT"
+}

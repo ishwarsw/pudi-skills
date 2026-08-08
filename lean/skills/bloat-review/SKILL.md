@@ -1,16 +1,17 @@
 ---
-name: pudi-review
+name: bloat-review
 description: >
   Code review that hunts over-engineering only: reinvented standard library,
   unneeded dependencies, speculative abstractions, dead flexibility. One line
-  per finding — location, what to cut, what replaces it. Two scopes: a diff
-  (default) or the whole repo. Use on "review for over-engineering", "what can
-  we delete", "is this over-engineered", "audit this codebase", "find bloat".
-  Complements correctness review; this one only hunts complexity.
+  per finding — location, what to cut, what replaces it. Three scopes: a diff
+  (default), the whole repo, or the `pudi:` shortcut ledger. Use on "review for
+  over-engineering", "what can we delete", "is this over-engineered", "audit
+  this codebase", "find bloat", "what did we mark to do later". Complements
+  correctness review; this one only hunts complexity.
 license: MIT
 ---
 
-# Pudi Review
+# Bloat Review
 
 Find what to delete. One line per finding: location, what to cut, what
 replaces it. The best outcome is that the code gets shorter.
@@ -19,9 +20,17 @@ replaces it. The best outcome is that the code gets shorter.
 
 - **diff** (default) — review the pending changes. Report in file/line order.
 - **repo** — scan the whole tree. Rank biggest cut first.
+- **debt** — harvest `pudi:` shortcut comments into a ledger instead of
+  reviewing code. `grep -rnE '(#|//) ?pudi:' .`, skipping `node_modules`,
+  `.git`, build output. Each marker names its ceiling and upgrade path, so pull
+  both: `<file>:<line>, <what was simplified>. ceiling: <limit>. upgrade:
+  <trigger>.` A marker with no upgrade path gets tagged `no-trigger` — those
+  are the ones that silently rot. End with `<N> markers, <M> with no trigger.`
+  Reads and reports only; nothing found is `No pudi: debt. Clean ledger.`
 
-Pick `repo` when the ask names the codebase ("audit this repo", "what can I
-delete", "find bloat") rather than the change.
+Pick `repo` when the ask names the codebase rather than the change. Pick
+`debt` when the ask is about what was deliberately deferred, not what to cut
+now — those are different questions with the same one-line-per-finding shape.
 
 ## Tags
 
@@ -61,14 +70,23 @@ adds deps: `net: -<N> lines, -<M> deps possible.`
 
 Count only what you actually located and named. Never report a savings figure
 for code that was never written — there is no baseline to subtract from, so
-"this approach saved you X lines" is an invented number. The ledger from
-`pudi-debt` is the only real count of what was deliberately not built.
+"this approach saved you X lines" is an invented number. The `debt` scope
+above is the only real count of what was deliberately not built.
 
 If there is nothing to cut: `Lean already. Ship.` and stop.
+
+## Persona lenses (optional, second-opinion only)
+
+Not a default pass — run when asked for "a different angle" or "a second
+opinion," one line each, same finding format as above:
+
+- **Security** — what does this flexibility expose that a fixed shape wouldn't?
+- **3am maintainer** — which abstraction here needs the design doc to debug?
+- **Cost** — which dependency or resource scales with load nobody bounded?
 
 ## Boundaries
 
 Over-engineering and complexity only. Correctness bugs, security holes, and
 performance are out of scope — route them to a normal review pass. One small
-test or self-check per non-trivial path is the pudi minimum, not bloat; never
+test or self-check per non-trivial path is the lean minimum, not bloat; never
 flag it for deletion. Lists findings, applies nothing.

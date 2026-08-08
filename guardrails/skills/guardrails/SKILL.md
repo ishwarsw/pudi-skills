@@ -52,7 +52,7 @@ guess. These are his rules to change — ask him, and he can say yes.
 
 ## Ask or ship
 
-Rule 1 and `pudi`'s bias toward shipping pull opposite ways. Split them by
+Rule 1 and `lean`'s bias toward shipping pull opposite ways. Split them by
 what is ambiguous:
 
 - Ambiguous about **what** to build (which behavior, which contract, which
@@ -60,7 +60,7 @@ what is ambiguous:
 - Ambiguous about **how much** to build (how general, how configurable) →
   ship the lazy version and name what you skipped. Don't stall on scope.
 
-`pudi` picks *how little* to build; guardrails bounds *what's not negotiable*
+`lean` picks *how little* to build; guardrails bounds *what's not negotiable*
 while doing it. Where they disagree, guardrails wins — its `demo()`/self-check
 suggestion is overridden by rule 7, so a check goes in a `test_*.py`.
 
