@@ -3,6 +3,8 @@
 // rule 7 hard rules from skills/guardrails/SKILL.md regardless of whether the
 // skill was triggered by description-matching. Exit 2 + stderr = block.
 
+const DEPENDENCY_BLOCKS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
+
 const chunks = [];
 process.stdin.on("data", (chunk) => chunks.push(chunk));
 process.stdin.on("end", () => {
@@ -92,21 +94,110 @@ function checkDunderAll(content, violations) {
 }
 
 function checkUnpinnedDependency(content, filePath, violations) {
-  const lines = content.split("\n");
-  const isPackageJson = /package\.json$/i.test(filePath);
-  for (const line of lines) {
-    if (isPackageJson) {
-      const match = line.match(/"([A-Za-z0-9@/_.-]+)"\s*:\s*"([^"]+)"/);
-      if (!match) continue;
-      const version = match[2];
-      if (/^[\^~]/.test(version) || version === "*" || version === "latest") {
-        violations.push(`unpinned dependency "${match[1]}": "${version}" in package.json (guardrails rule 7 — pin exact versions)`);
-      }
-    } else {
-      const match = line.match(/^([A-Za-z0-9_.-]+)\s*(>=|~=|\^)\s*[\w.]+/);
-      if (match) {
-        violations.push(`unpinned dependency "${match[1]}" using "${match[2]}" (guardrails rule 7 — pin exact versions)`);
+  if (/package\.json$/i.test(filePath)) {
+    checkPackageJsonPins(content, violations);
+    return;
+  }
+  // pyproject declares deps as quoted requirement strings inside arrays; the
+  // requirement grammar is PEP 508 either way, so both file types share it.
+  const isToml = /pyproject\.toml$/i.test(filePath);
+  const lines = isToml ? dependencyArrayLines(content) : content.split("\n");
+  for (const rawLine of lines) {
+    for (const requirement of pythonRequirements(rawLine, isToml)) {
+      const problem = unpinnedReason(requirement);
+      if (problem) {
+        violations.push(`unpinned dependency "${requirement}" — ${problem} (guardrails rule 7 — pin exact versions)`);
       }
     }
   }
+}
+
+// Only the lines inside a dependencies array are requirements. Scanning every
+// quoted string in the file would read `name = "my-project"` as a bare package.
+function dependencyArrayLines(content) {
+  const collected = [];
+  let depth = 0;
+  let insideDependencyTable = false;
+  for (const line of content.split("\n")) {
+    // PEP 621 also spells extras as a table, where the keys are group names
+    // rather than "dependencies": [project.optional-dependencies] / dev = [...].
+    // Matching only `dependencies = [` missed every dependency written that way.
+    const tableHeader = depth === 0 && line.match(/^\s*\[([^\]"']+)\]\s*$/);
+    if (tableHeader) {
+      insideDependencyTable = /(^|\.)(optional-)?dependencies$/.test(tableHeader[1].trim());
+      continue;
+    }
+    const opensHere =
+      /^\s*(?:dependencies|.*-dependencies|dev-dependencies)\s*=\s*\[/.test(line) ||
+      (insideDependencyTable && /=\s*\[/.test(line));
+    if (depth > 0 || opensHere) {
+      collected.push(opensHere ? line.slice(line.indexOf("[")) : line);
+      depth += (line.match(/\[/g) || []).length - (line.match(/\]/g) || []).length;
+      if (depth < 0) depth = 0;
+    }
+  }
+  return collected;
+}
+
+function checkPackageJsonPins(content, violations) {
+  for (const [name, version] of packageJsonDependencies(content)) {
+    if (/^[\^~><]/.test(version) || version === "*" || version === "latest" || version === "") {
+      violations.push(`unpinned dependency "${name}": "${version}" in package.json (guardrails rule 7 — pin exact versions)`);
+    }
+  }
+}
+
+// package.json is JSON, so parse it and read only the dependency maps. A line
+// scan cannot tell "jest": "^29.0.0" from "node": ">=18" under engines, and
+// engines is in most real package.json files — that made ordinary writes fail.
+function packageJsonDependencies(content) {
+  try {
+    const parsed = JSON.parse(content);
+    return DEPENDENCY_BLOCKS.flatMap((block) => Object.entries(parsed[block] || {}));
+  } catch {
+    // An Edit delivers only added lines, which never parse as JSON. Fall back to
+    // tracking the enclosing block by name and skip any entry whose block cannot
+    // be determined — missing one beats blocking a legitimate write.
+    const found = [];
+    let insideDependencies = false;
+    for (const line of content.split("\n")) {
+      const blockHeader = line.match(/"([A-Za-z]+)"\s*:\s*\{/);
+      if (blockHeader) {
+        insideDependencies = DEPENDENCY_BLOCKS.includes(blockHeader[1]);
+        continue;
+      }
+      if (/^\s*\}/.test(line)) insideDependencies = false;
+      const entry = insideDependencies && line.match(/"([@A-Za-z0-9/_.-]+)"\s*:\s*"([^"]*)"/);
+      if (entry) found.push([entry[1], entry[2]]);
+    }
+    return found;
+  }
+}
+
+// A requirements.txt line is one requirement; a pyproject line may carry several
+// quoted ones. Comments, blank lines, and pip flags (-r, --index-url) are not
+// requirements and are dropped here rather than half-matched later.
+function pythonRequirements(rawLine, isToml) {
+  if (isToml) {
+    return [...rawLine.matchAll(/"([^"]+)"|'([^']+)'/g)]
+      .map((match) => (match[1] || match[2]).trim())
+      .filter((candidate) => /^[A-Za-z0-9]/.test(candidate));
+  }
+  const line = rawLine.split("#")[0].trim();
+  if (!line || line.startsWith("-")) return [];
+  return [line];
+}
+
+// Returns why the requirement is unpinned, or null when it names an exact
+// version. Anything that is not `==`/`===` can resolve differently tomorrow.
+function unpinnedReason(requirement) {
+  const withoutMarker = requirement.split(";")[0].trim();
+  if (!withoutMarker || !/^[A-Za-z0-9]/.test(withoutMarker)) return null;
+  if (/\s@\s/.test(withoutMarker)) return "direct URL/VCS reference with no pinned revision";
+  if (/===?[^=]/.test(withoutMarker)) {
+    return /,/.test(withoutMarker) ? "exact pin combined with a range specifier" : null;
+  }
+  if (/(>=|<=|~=|!=|\^|>|<)/.test(withoutMarker)) return "range specifier instead of ==";
+  if (/^[A-Za-z0-9._-]+(\[[^\]]*\])?$/.test(withoutMarker)) return "no version specified at all";
+  return null;
 }

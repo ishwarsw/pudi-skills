@@ -14,7 +14,7 @@ import os
 import sys
 import tempfile
 
-CACHE = os.path.join(tempfile.gettempdir(), "pudi-complexity-cache.json")
+CACHE = os.path.join(tempfile.gettempdir(), "lean-complexity-cache.json")
 WARN = 7
 BRANCH_NODES = (ast.If, ast.For, ast.AsyncFor, ast.While, ast.ExceptHandler,
                 ast.With, ast.AsyncWith, ast.Assert, ast.IfExp,
@@ -94,7 +94,7 @@ def run():
     previous = swap_cache_entry(norm, score)
     if previous is None or score <= previous or score <= WARN:
         return
-    message = (f"pudi complexity-watch: {norm} got more complex after this edit — "
+    message = (f"lean complexity-watch: {norm} got more complex after this edit — "
                f"worst function is {name}() at cyclomatic complexity {score}, "
                f"was {previous}, warn threshold {WARN}. "
                f"Simplify now or say why the branch is load-bearing.")
