@@ -32,6 +32,7 @@ One or two sentences: what problem, for whom, evidenced how. State the problem, 
 ### 3. Goals & Non-Goals
 - **Goals:** what this initiative must accomplish, stated as outcomes, not features.
 - **Non-goals:** explicitly out of scope, especially anything a reader might reasonably assume is included. This section prevents scope creep more than any other.
+- **Deferred:** in scope eventually, but not this release — each with the signal that brings it back (a usage threshold, a customer count, a dependency landing). "Later" with no trigger is a non-goal that hasn't admitted it yet.
 ### 4. Explicit Assumptions
 Every assumption this PRD depends on, falsifiable, with a stated consequence if wrong. Do not skip this table even for "obvious" assumptions.
  

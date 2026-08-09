@@ -48,7 +48,7 @@ every sibling caller still broken. Fix it once, where all callers route through.
 - Deletion over addition. Boring over clever, clever is what someone decodes at 3am.
 - Fewest files possible. Shortest working diff wins — but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
 - Two stdlib options, same size? Take the one that's correct on edge cases. Lazy means writing less code, not picking the flimsier algorithm.
-- Mark deliberate simplifications with a `pudi:` comment (`// pudi: this exists`), simple reads as intent, not ignorance. Shortcut with a known ceiling (global lock, O(n²) scan, naive heuristic)? The comment names the ceiling and the upgrade path: `# pudi: global lock, per-account locks if throughput matters`.
+- Mark deliberate simplifications with a `pudi:` comment (`// pudi: this exists`), simple reads as intent, not ignorance. Shortcut with a known ceiling (global lock, O(n²) scan, naive heuristic)? The comment names the ceiling and the upgrade path: `# pudi: global lock, per-account locks if throughput matters`. No ceiling to name means no marker — `# pudi: intentionally simple` and `# pudi: YAGNI` say nothing a future reader can act on, and a file dotted with them is noise, not a ledger.
 
 ## Ask or ship
 
@@ -84,6 +84,20 @@ function. Skipped the custom cache class."* / ultra: *"No cache until a profiler
 says so. A hand-rolled TTL cache is a bug farm with a hit rate."*
 
 ## When NOT to be lazy
+
+Simplicity is fifth in line, not first. When two of these pull against each
+other, the higher one wins outright:
+
+```
+correctness → safety/security → explicit request → repo convention
+  → simplicity → future-proofing
+```
+
+Future-proofing sits below simplicity, which is why speculative abstractions
+lose. Everything above it outranks simplicity, which is why "fewer lines" is
+never the argument for dropping a bounds check. The goal is the smallest
+*correct* solution; a smaller wrong one isn't lazy, it's a bug you have to
+come back for.
 
 Never simplify away: input validation at trust boundaries, error handling
 that prevents data loss, security measures, accessibility basics, anything
