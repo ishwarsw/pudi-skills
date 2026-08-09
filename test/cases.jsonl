@@ -72,3 +72,11 @@
 {"hook":"devops","expect":"pass","path":"ci.yml","content":"countries:\n  - \"NO\"\n  - \"SE\"","why":"quoted country codes are safe"}
 {"hook":"devops","expect":"pass","path":".github/workflows/ci.yml","content":"        python-version: [\"3.10\", \"3.11\", \"pypy-3.11\"]","why":"quoted pypy-3.11 must not match as a bare float"}
 {"hook":"devops","expect":"pass","path":".github/workflows/ci.yml","content":"        - { python-version: \"pypy-3.11\", os: \"windows-latest\" }","why":"inline map with quoted version"}
+{"hook":"guardrails","expect":"pass","env":{"PUDI_GUARDRAILS":"audit"},"stderrHas":"Guardrails audit","path":"app/svc.py","content":"def _helper():\n    return 1\n","why":"audit mode reports a preference violation without blocking"}
+{"hook":"guardrails","expect":"pass","env":{"PUDI_GUARDRAILS":"audit"},"stderrHas":"[reproducibility]","path":"requirements.txt","content":"requests>=2.0\n","why":"audit mode reports an unpinned dependency without blocking"}
+{"hook":"guardrails","expect":"pass","env":{"PUDI_GUARDRAILS":"off"},"path":"requirements.txt","content":"requests>=2.0\n","why":"off disables the hook entirely"}
+{"hook":"guardrails","expect":"block","env":{"PUDI_GUARDRAILS":"audti"},"path":"requirements.txt","content":"requests>=2.0\n","why":"an unrecognized mode falls back to enforce rather than silently passing"}
+{"hook":"guardrails","expect":"pass","env":{"PUDI_GUARDRAILS_PREFERENCE":"off"},"path":"app/svc.py","content":"def _helper():\n    return 1\n","why":"preference tier opted out lets a leading-underscore name through"}
+{"hook":"guardrails","expect":"pass","env":{"PUDI_GUARDRAILS_PREFERENCE":"off"},"path":"app/cli.py","content":"if __name__ == \"__main__\":\n    main()\n","why":"preference tier opted out lets a __main__ guard through"}
+{"hook":"guardrails","expect":"block","env":{"PUDI_GUARDRAILS_PREFERENCE":"off"},"path":"requirements.txt","content":"requests>=2.0\n","why":"opting out of preference must not disable reproducibility"}
+{"hook":"guardrails","expect":"block","stderrHas":"[preference]","path":"app/svc.py","content":"def _helper():\n    return 1\n","why":"enforce still blocks by default and labels the tier"}

@@ -2,11 +2,23 @@
 // PreToolUse hook for Write/Edit/NotebookEdit — mechanically enforces the
 // rule 7 hard rules from skills/guardrails/SKILL.md regardless of whether the
 // skill was triggered by description-matching. Exit 2 + stderr = block.
+//
+// Two env vars change what happens on a violation, never what counts as one:
+//   PUDI_GUARDRAILS=enforce|audit|off   (default enforce)
+//   PUDI_GUARDRAILS_PREFERENCE=on|off   (default on)
+// See docs/POLICY.md for the tier definitions.
 
 const { existsSync } = require("node:fs");
 const { basename, dirname, join } = require("node:path");
 
 const DEPENDENCY_BLOCKS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
+
+// Which tier a rule belongs to decides whether it can be switched off, so the
+// tier travels with the violation rather than being inferred from its wording.
+const REPRODUCIBILITY = "reproducibility";
+const PREFERENCE = "preference";
+
+const MODES = new Set(["enforce", "audit", "off"]);
 
 // A manifest whose ecosystem resolves through a lockfile is reproducible with a
 // range in it — `^18.2.0` + package-lock.json installs one exact tree. Pinning
@@ -28,6 +40,9 @@ process.stdin.on("end", () => {
     process.exit(0);
   }
 
+  const mode = readMode();
+  if (mode === "off") process.exit(0);
+
   const toolInput = input.tool_input || {};
   const filePath = toolInput.file_path || "";
   const content = extractContent(input.tool_name, toolInput);
@@ -38,7 +53,7 @@ process.stdin.on("end", () => {
   const isCodeFile = /\.(py|js|jsx|ts|tsx|mjs|cjs)$/i.test(filePath);
   const isDependencyFile = /(requirements.*\.txt|pyproject\.toml|package\.json)$/i.test(filePath);
 
-  if (isCodeFile) {
+  if (isCodeFile && preferenceTierEnabled()) {
     checkLeadingUnderscore(content, violations);
     checkMainGuard(content, violations);
     checkDunderAll(content, violations);
@@ -47,16 +62,37 @@ process.stdin.on("end", () => {
     checkUnpinnedDependency(content, filePath, violations);
   }
 
-  if (violations.length > 0) {
-    process.stderr.write(
-      "Guardrails rule 7 violation — blocked:\n" +
-        violations.map((v) => "  - " + v).join("\n") +
-        "\n"
-    );
-    process.exit(2);
-  }
-  process.exit(0);
+  if (violations.length === 0) process.exit(0);
+
+  process.stderr.write(report(violations, filePath, mode));
+  // Audit reports the same finding on the same stream and still lets the write
+  // through, so a repo can be surveyed before its author opts into enforcement.
+  process.exit(mode === "audit" ? 0 : 2);
 });
+
+function readMode() {
+  const requested = (process.env.PUDI_GUARDRAILS || "enforce").trim().toLowerCase();
+  // An unrecognized value must not silently disable enforcement — a typo in
+  // `PUDI_GUARDRAILS=audti` would otherwise read as "not enforce".
+  return MODES.has(requested) ? requested : "enforce";
+}
+
+function preferenceTierEnabled() {
+  return (process.env.PUDI_GUARDRAILS_PREFERENCE || "on").trim().toLowerCase() !== "off";
+}
+
+function report(violations, filePath, mode) {
+  const heading =
+    mode === "audit"
+      ? `Guardrails audit — ${violations.length} finding(s) in ${filePath}, not blocked:`
+      : "Guardrails rule 7 violation — blocked:";
+  const lines = violations.map((v) => `  - [${v.tier}] ${v.message}`).join("\n");
+  const footer =
+    mode === "audit"
+      ? "\nRunning in audit mode (PUDI_GUARDRAILS=audit). Unset it to block these.\n"
+      : "\n";
+  return `${heading}\n${lines}\n${footer}`;
+}
 
 function extractContent(toolName, toolInput) {
   if (toolName === "Write") return toolInput.content;
@@ -89,20 +125,29 @@ function checkLeadingUnderscore(content, violations) {
     if (name.startsWith("__") && name.endsWith("__")) continue;
     if (!seen.has(name)) {
       seen.add(name);
-      violations.push(`leading-underscore name created: "${name}" (guardrails rule 7 — no leading-underscore names)`);
+      violations.push({
+        tier: PREFERENCE,
+        message: `leading-underscore name created: "${name}" (guardrails rule 7 — no leading-underscore names)`,
+      });
     }
   }
 }
 
 function checkMainGuard(content, violations) {
   if (/^\s*if\s+__name__\s*==\s*['"]__main__['"]\s*:/m.test(content)) {
-    violations.push('if __name__ == "__main__": block added (guardrails rule 7 — forbidden)');
+    violations.push({
+      tier: PREFERENCE,
+      message: 'if __name__ == "__main__": block added (guardrails rule 7 — forbidden)',
+    });
   }
 }
 
 function checkDunderAll(content, violations) {
   if (/^\s*__all__\s*=/m.test(content)) {
-    violations.push("__all__ = ... declaration added (guardrails rule 7 — forbidden)");
+    violations.push({
+      tier: PREFERENCE,
+      message: "__all__ = ... declaration added (guardrails rule 7 — forbidden)",
+    });
   }
 }
 
@@ -124,7 +169,10 @@ function checkUnpinnedDependency(content, filePath, violations) {
     for (const requirement of pythonRequirements(rawLine, isToml)) {
       const problem = unpinnedReason(requirement);
       if (problem) {
-        violations.push(`unpinned dependency "${requirement}" — ${problem} (guardrails rule 7 — ${fix})`);
+        violations.push({
+          tier: REPRODUCIBILITY,
+          message: `unpinned dependency "${requirement}" — ${problem} (guardrails rule 7 — ${fix})`,
+        });
       }
     }
   }
@@ -160,7 +208,10 @@ function dependencyArrayLines(content) {
 function checkPackageJsonPins(content, fix, violations) {
   for (const [name, version] of packageJsonDependencies(content)) {
     if (/^[\^~><]/.test(version) || version === "*" || version === "latest" || version === "") {
-      violations.push(`unpinned dependency "${name}": "${version}" in package.json (guardrails rule 7 — ${fix})`);
+      violations.push({
+        tier: REPRODUCIBILITY,
+        message: `unpinned dependency "${name}": "${version}" in package.json (guardrails rule 7 — ${fix})`,
+      });
     }
   }
 }
