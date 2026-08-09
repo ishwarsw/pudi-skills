@@ -17,42 +17,11 @@ thing is broken.
 
 ## YAML that parses is not YAML that is correct
 
-Every trap below is valid syntax that parses to the wrong *type*. The parser
-will not warn you; the deploy will.
-
-| You wrote | It becomes | Fix |
-|---|---|---|
-| `python-version: 3.10` | float `3.1` | quote it: `"3.10"` |
-| `- NO` (country code) | boolean `false` | quote it: `"NO"` |
-| `retries: 08` | invalid octal / `8` | quote or drop the zero |
-| `at: 12:30` | `750` (sexagesimal) | quote it |
-| `value:` (nothing) | `null`, not `""` | write `""` if you mean empty |
-| tab for indentation | parse error | spaces only, always |
-
-**The rule that covers all of them:** if it is a string but looks like a
-number, a boolean, a version, or a time — quote it.
-
-Two more that bite in real pipelines: duplicate keys silently take the last
-value in most parsers, and `|` keeps newlines while `>` folds them to spaces
-(`|-` strips the trailing newline, `|+` keeps it). Getting that backwards in a
-script block is a whole afternoon.
-
-## Never hand-verify a manifest
-
-Reading YAML back to yourself confirms nothing. Run the real parser:
-
-```
-docker compose config                    # resolves vars, merges, prints final
-kubectl apply --dry-run=server -f x.yaml # server-side, catches schema + admission
-kubectl explain deployment.spec.template # the authoritative field reference
-yq '.' file.yaml                         # does it parse, and to what
-actionlint                               # GitHub Actions, catches bad exprs
-helm template . | kubectl apply --dry-run=server -f -
-```
-
-`--dry-run=server` over `=client`: client only checks shape, server checks the
-actual schema, admission webhooks, and quotas. Most real failures are
-server-side.
+If a value is a string but looks like a number, a boolean, a version, or a
+time — quote it. `3.10` becomes float `3.1`, `NO` becomes `false`, `12:30`
+becomes sexagesimal `750`; the parser won't warn you, the deploy will. Full
+trap table and the commands that verify a manifest for real (never hand-check
+by reading it back): `references/yaml-traps.md`.
 
 ## Debugging: go down a layer, don't go sideways
 
@@ -71,6 +40,8 @@ deploy failure costs an outage.
 
 ## Details
 
+- Writing or reviewing YAML — the full trap table and parser-verification
+  commands: `references/yaml-traps.md`
 - Runtime triage — CrashLoopBackOff, ImagePullBackOff, Pending, OOMKilled,
   workflow-not-triggering, and the commands for each: `references/triage.md`
 - Manifest defaults worth setting every time (limits, probes, security context,

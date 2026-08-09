@@ -16,11 +16,11 @@ Ishwar's engineering standards. **MUST**/**MUST NOT** = non-negotiable. When a
 rule and a request conflict: **stop and ask**, state your reasoning, don't
 guess. These are his rules to change — ask him, and he can say yes.
 
-Rules fall in three tiers — **safety**, **reproducibility**, **preference** —
-defined in [`docs/POLICY.md`](../../../docs/POLICY.md), along with the
-precedence order for resolving conflicts between skills. The preference tier
-(rule 7's naming rules) is personal taste and can be switched off; safety and
-reproducibility cannot. A violation names its tier when it reports.
+Tiers, precedence across skills, and the full ask-or-ship split live in
+[`docs/POLICY.md`](../../../docs/POLICY.md) — that file is canonical, this is
+not a second copy of it. Rule 7 below is tagged with its tier inline because
+the tag changes what the hook does; read POLICY.md before assuming a rule is
+universal rather than taste.
 
 ## The non-negotiables (always apply)
 
@@ -56,12 +56,10 @@ reproducibility cannot. A violation names its tier when it reports.
    skill loaded — this section is the human-readable mirror of that
    enforcement, not the only copy of it. Don't relitigate them mid-task; if
    one is genuinely wrong for a case, say so and ask.
-   **A block is authoritative.** Don't route around it: no writing the same
-   content through `bash`/`cat`/`sed` after a Write is refused, no splitting
-   the violation across files or edits, no re-encoding the same value to dodge
-   the pattern, no editing or disabling the hook script to get unblocked. If
-   the rule itself is wrong, stop and say so as its own change — never weaken
-   enforcement as a side effect of an unrelated task.
+   **A block is authoritative** (POLICY.md precedence #4) — don't route around
+   it via `bash`/`cat`/`sed`, split the violation across edits, re-encode the
+   value, or disable the hook. Wrong rule → say so as its own change, never
+   weaken enforcement as a side effect.
 8. **Justify behavior changes.** Before changing how existing code behaves:
    state the benefit, the safety (no hidden blocker/regression), and the
    downstream impact. Missing any of the three → leave it as-is, raise it.
@@ -70,43 +68,11 @@ reproducibility cannot. A violation names its tier when it reports.
 
 ## Ask or ship
 
-Rule 1 and `lean`'s bias toward shipping pull opposite ways. Split them by
-what is ambiguous — the test is whether the answer changes **correctness**:
-
-- Ambiguous about **what** to build (which behavior, which contract, which
-  file is authoritative) → **rule 1 wins, stop and ask.**
-- Ambiguous about a **risky or irreversible** action (data loss, force-push,
-  production) → **stop and ask**, however obvious it looks.
-- Ambiguous about **how much** to build (how general, how configurable) →
-  ship the lazy version and name what you skipped. Don't stall on scope.
-- Ambiguous about **style** (naming, layout, idiom) → read the repo, that's
-  `conform`'s job. Don't ask what the sibling files already answer.
-- Ambiguous about a **minor preference** with no correctness impact → pick the
-  conventional option and say which you picked.
-
-Asking about everything is its own failure mode: it costs the user more than a
-wrong guess on a reversible detail. Reserve the question for what a wrong
-answer would actually break.
-
-`lean` picks *how little* to build; guardrails bounds *what's not negotiable*
-while doing it. Where they disagree, guardrails wins — its `demo()`/self-check
-suggestion is overridden by rule 7, so a check goes in a `test_*.py`.
-
-## Reporting: measured, or stated as unmeasured
-
-Every claim about your own work is either a figure you actually observed or an
-explicit admission that you didn't check. There is no third option, and
-adjectives are not the third option.
-
-- ✅ `3 files, +47/-18. 24/24 tests pass. No new dependency.`
-- ✅ `Tests not run — no suite in this repo.`
-- ❌ `small change, tests look good, security improved`
-
-Never estimate a figure and present it as measured; `bloat-review`'s rule
-against invented savings numbers is the same rule, and it applies everywhere.
-When you're blocked, say so first and plainly — reason, the evidence you saw,
-what you need — rather than burying it under what did work. `lean`'s Output
-section governs how much you write; this governs whether it's true.
+Rule 1 and `lean`'s bias toward shipping pull opposite ways; POLICY.md's
+ask-or-ship table resolves it by what kind of ambiguity it is, not a blanket
+rule. Where `lean` and guardrails disagree outright, guardrails wins — its
+`demo()`/self-check suggestion is overridden by rule 7, so a check goes in a
+`test_*.py`.
 
 ## Load more detail only if the task needs it
 
