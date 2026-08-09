@@ -1,7 +1,12 @@
 # pudi-skills
 
-Add-ons for Claude Code. Once installed, they work on their own — you keep
-talking to Claude normally, nothing new to learn.
+Pragmatic engineering habits for Claude Code: build the smallest solution that
+is actually correct, follow what the repo already does instead of inventing a
+new pattern, catch the risky change before it lands, and report real numbers
+rather than "looks good".
+
+Once installed they work on their own — you keep talking to Claude normally,
+nothing new to learn.
 
 ## Install
 
@@ -45,9 +50,12 @@ Nothing to remember. Just ask for what you want, plainly:
 | "Fix the scan findings" *(scanner repos only)* | Fixes the safe ones, re-checks the score, tells you what's left |
 
 Some rules are also machine-checked, not just suggested — Claude can't skip
-them even by accident. You'll see this if you ever try to commit an unpinned
-dependency (`requests>=2` instead of `requests==2.31.0`) or a secret key: it
-gets blocked before the file is even written, with a plain reason why.
+them even by accident. You'll see this if you ever try to commit a secret key,
+or a dependency whose version isn't nailed down: it gets blocked before the
+file is even written, with a plain reason why. "Nailed down" means either an
+exact version (`requests==2.31.0`) or a range plus a lockfile you've committed
+— `"react": "^18.2.0"` next to a `package-lock.json` is fine, because the
+lockfile is what decides the version.
 
 ## What's in the box
 

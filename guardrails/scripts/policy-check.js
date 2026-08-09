@@ -3,7 +3,20 @@
 // rule 7 hard rules from skills/guardrails/SKILL.md regardless of whether the
 // skill was triggered by description-matching. Exit 2 + stderr = block.
 
+const { existsSync } = require("node:fs");
+const { basename, dirname, join } = require("node:path");
+
 const DEPENDENCY_BLOCKS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"];
+
+// A manifest whose ecosystem resolves through a lockfile is reproducible with a
+// range in it — `^18.2.0` + package-lock.json installs one exact tree. Pinning
+// the manifest instead is wrong for a library: it makes the package
+// co-installable with nothing. requirements.txt has no lockfile companion in
+// normal practice, so it is absent here and stays strictly pinned.
+const MANIFEST_LOCKFILES = {
+  "package.json": ["package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb"],
+  "pyproject.toml": ["poetry.lock", "uv.lock", "pdm.lock", "pixi.lock"],
+};
 
 const chunks = [];
 process.stdin.on("data", (chunk) => chunks.push(chunk));
@@ -94,8 +107,13 @@ function checkDunderAll(content, violations) {
 }
 
 function checkUnpinnedDependency(content, filePath, violations) {
+  const lockfiles = MANIFEST_LOCKFILES[basename(filePath).toLowerCase()];
+  if (lockfiles && lockfiles.some((name) => existsSync(join(dirname(filePath), name)))) return;
+  // Only a manifest that *could* have carried a lockfile gets told about one.
+  const fix = lockfiles ? "pin exact versions, or commit a lockfile" : "pin exact versions";
+
   if (/package\.json$/i.test(filePath)) {
-    checkPackageJsonPins(content, violations);
+    checkPackageJsonPins(content, fix, violations);
     return;
   }
   // pyproject declares deps as quoted requirement strings inside arrays; the
@@ -106,7 +124,7 @@ function checkUnpinnedDependency(content, filePath, violations) {
     for (const requirement of pythonRequirements(rawLine, isToml)) {
       const problem = unpinnedReason(requirement);
       if (problem) {
-        violations.push(`unpinned dependency "${requirement}" — ${problem} (guardrails rule 7 — pin exact versions)`);
+        violations.push(`unpinned dependency "${requirement}" — ${problem} (guardrails rule 7 — ${fix})`);
       }
     }
   }
@@ -139,10 +157,10 @@ function dependencyArrayLines(content) {
   return collected;
 }
 
-function checkPackageJsonPins(content, violations) {
+function checkPackageJsonPins(content, fix, violations) {
   for (const [name, version] of packageJsonDependencies(content)) {
     if (/^[\^~><]/.test(version) || version === "*" || version === "latest" || version === "") {
-      violations.push(`unpinned dependency "${name}": "${version}" in package.json (guardrails rule 7 — pin exact versions)`);
+      violations.push(`unpinned dependency "${name}": "${version}" in package.json (guardrails rule 7 — ${fix})`);
     }
   }
 }

@@ -36,8 +36,11 @@ Every mechanical rule has a case in [`test/cases.jsonl`](../test/cases.jsonl),
 replayed through the real hook scripts:
 
 ```bash
-node test/run-hooks.js      # 53/53
+node test/run-hooks.js      # 57/57
 ```
+
+Run it from the repo root — four of the dependency cases resolve fixture
+lockfiles under `test/fixtures/` by relative path.
 
 Adding a rule to a hook means adding a line to that file in the same commit.
 The suite is the loop: write the case, watch it fail, fix the hook, watch it
@@ -49,7 +52,16 @@ real repositories** (flask, requests, express, slugify, fastapi). Every
 dependency block was a genuine unpinned version; `report-check` blocked nothing
 at all, which is what a scanner-only hook should do outside a scanner repo. The
 corpus run also caught a false positive in `yaml-check` that the unit cases had
-missed — `3.11` matched inside the already-quoted string `"pypy-3.11"`.
+missed — `3.11` matched inside the already-quoted string `"pypy-3.11"`. Those
+five are all libraries, which correctly ship no lockfile, so the lockfile rule
+above does not change that result — the case it fixes is an *application*
+repo, which is where the committed lockfile lives.
+
+What none of this covers is agent behavior. Every case here proves a hook
+exits 2 when it should; nothing proves a skill changed what Claude built.
+[`test/agent-tasks.md`](../test/agent-tasks.md) is the five-task manual
+protocol for that, and it is currently unrun — stated here rather than left
+for someone to discover.
 
 Cyclomatic complexity was measured, not guessed: `ast`-exact for the one Python
 hook (`complexity-watch.py` scores 7 on its own worst function — exactly its
@@ -91,7 +103,29 @@ Rule 7 is the hook. Four things blocked on every write:
 | Leading-underscore names you create | `__init__`, `__name__` etc. allowlisted |
 | `if __name__ == "__main__":` | anchored to line start |
 | `__all__ = ...` | anchored to line start |
-| Unpinned dependencies | `requirements.txt`, `pyproject.toml`, `package.json` |
+| Non-reproducible dependencies | `requirements.txt`, `pyproject.toml`, `package.json` |
+
+The rule is **reproducibility**, not literal `==`. A range is fine when a
+lockfile beside the manifest decides the version:
+
+```
+package.json    ← package-lock.json, npm-shrinkwrap.json, yarn.lock,
+                  pnpm-lock.yaml, bun.lockb
+pyproject.toml  ← poetry.lock, uv.lock, pdm.lock, pixi.lock
+requirements.txt  no lockfile companion — stays strictly pinned
+```
+
+Why this isn't a loosening: `"react": "^18.2.0"` plus a committed
+`package-lock.json` resolves to exactly one tree, and pinning the manifest
+instead is actively wrong for a library — it makes the package co-installable
+with nothing. Measured on nine local Node projects that all commit a
+`package-lock.json`: **412 of 421** declared dependencies use a range, so the
+previous rule made every one of those manifests unwritable. The check is
+`existsSync` against a fixed list of filenames in the manifest's own
+directory — no manifest parsing, no package manager invoked, no new
+dependency. A sibling lockfile from a different ecosystem does not count
+(`package-lock.json` does not vouch for a `requirements.txt`); four regression
+cases cover both directions.
 
 **It only inspects lines an edit actually adds.** An `Edit` whose `new_string`
 carries untouched context isn't penalised for what was already there — without
@@ -105,7 +139,8 @@ uneditable, including by the edit that would fix it.
 reads both the `dependencies = [...]` array form and the PEP 621
 `[project.optional-dependencies]` table form.
 
-Unpinned-dependency coverage, all verified:
+Requirement-grammar coverage, all verified — this is what happens once the
+lockfile question above is settled and the manifest has to stand on its own:
 
 ```
 certifi                 blocked — no version at all
@@ -209,6 +244,12 @@ Stated rather than discovered later:
   being written, and a security check nobody can test gets uninstalled. CI
   secret scanning is the actual backstop; this hook is a fast first pass,
   never the last line.
+- **The lockfile check tests existence, not contents.** A `package-lock.json`
+  in the directory exempts the manifest even if it is stale or doesn't list
+  the dependency being added. Parsing every lockfile format to prove coverage
+  is a dependency-resolution engine, which is more machinery than the problem
+  is worth; a committed-but-stale lockfile is a real defect, just not this
+  hook's. `npm ci` / `uv lock --check` in CI is the check that catches it.
 - **The added-lines diff is text-based.** Both blocking hooks compare trimmed
   lines, so moving an existing violating line, or adding a second copy of one
   already in `old_string`, is not flagged. It fails toward permitting, which is
