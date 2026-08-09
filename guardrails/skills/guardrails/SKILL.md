@@ -37,13 +37,24 @@ guess. These are his rules to change — ask him, and he can say yes.
    workaround, subtle invariant). Never narrate *what* the code does or
    explain the change itself — that's for commit messages.
 7. **Hook-enforced hard rules.** No leading-underscore names (`_foo`, `__foo`)
-   that you create. No `if __name__ == "__main__":` blocks. No `__all__`. No
-   unpinned dependency versions (`>=`, `^`, `~=`). A PreToolUse hook
+   that you create. No `if __name__ == "__main__":` blocks. No `__all__`.
+   **Dependency resolution must be reproducible** — an exact `==`/exact
+   version, *or* a range backed by a committed lockfile beside the manifest
+   (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `poetry.lock`,
+   `uv.lock`, `pdm.lock`). Use whatever the repo already uses; never add a
+   package manager to satisfy this. `requirements.txt` has no lockfile
+   companion, so it stays strictly pinned. A PreToolUse hook
    (`scripts/policy-check.js`, shipped with this plugin) mechanically blocks
    these four on every Write/Edit/NotebookEdit regardless of whether this
    skill loaded — this section is the human-readable mirror of that
    enforcement, not the only copy of it. Don't relitigate them mid-task; if
    one is genuinely wrong for a case, say so and ask.
+   **A block is authoritative.** Don't route around it: no writing the same
+   content through `bash`/`cat`/`sed` after a Write is refused, no splitting
+   the violation across files or edits, no re-encoding the same value to dodge
+   the pattern, no editing or disabling the hook script to get unblocked. If
+   the rule itself is wrong, stop and say so as its own change — never weaken
+   enforcement as a side effect of an unrelated task.
 8. **Justify behavior changes.** Before changing how existing code behaves:
    state the benefit, the safety (no hidden blocker/regression), and the
    downstream impact. Missing any of the three → leave it as-is, raise it.
@@ -63,6 +74,22 @@ what is ambiguous:
 `lean` picks *how little* to build; guardrails bounds *what's not negotiable*
 while doing it. Where they disagree, guardrails wins — its `demo()`/self-check
 suggestion is overridden by rule 7, so a check goes in a `test_*.py`.
+
+## Reporting: measured, or stated as unmeasured
+
+Every claim about your own work is either a figure you actually observed or an
+explicit admission that you didn't check. There is no third option, and
+adjectives are not the third option.
+
+- ✅ `3 files, +47/-18. 24/24 tests pass. No new dependency.`
+- ✅ `Tests not run — no suite in this repo.`
+- ❌ `small change, tests look good, security improved`
+
+Never estimate a figure and present it as measured; `bloat-review`'s rule
+against invented savings numbers is the same rule, and it applies everywhere.
+When you're blocked, say so first and plainly — reason, the evidence you saw,
+what you need — rather than burying it under what did work. `lean`'s Output
+section governs how much you write; this governs whether it's true.
 
 ## Load more detail only if the task needs it
 

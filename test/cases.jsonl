@@ -32,6 +32,14 @@
 {"hook":"guardrails","expect":"pass","path":"pyproject.toml","content":"[project]\nname = \"my-project\"\nclassifiers = [\"Programming Language :: Python\"]\ndependencies = [\"requests==2.31.0\"]","why":"project metadata is not a requirement"}
 {"hook":"guardrails","expect":"pass","path":"pyproject.toml","content":"[tool.ruff.lint]\nselect = [\"E\", \"F\"]","why":"tool config array is not a requirement"}
 
+// ---- guardrails rule 7: a lockfile beside the manifest makes a range reproducible ----
+// Paths are repo-relative; run the suite from the repo root. Only the lockfile
+// needs to exist on disk — the manifest content arrives on stdin.
+{"hook":"guardrails","expect":"pass","path":"test/fixtures/npm-locked/package.json","content":"{\n  \"dependencies\": {\n    \"react\": \"^18.2.0\"\n  }\n}","why":"L1: caret range beside package-lock.json"}
+{"hook":"guardrails","expect":"pass","path":"test/fixtures/uv-locked/pyproject.toml","content":"[project]\ndependencies = [\"requests>=2\"]","why":"L1: pyproject range beside uv.lock"}
+{"hook":"guardrails","expect":"block","path":"test/fixtures/npm-locked/requirements.txt","content":"django>=4","why":"L2: package-lock.json does not vouch for a requirements.txt"}
+{"hook":"guardrails","expect":"block","path":"test/fixtures/pyproject.toml","content":"[project]\ndependencies = [\"requests>=2\"]","why":"L2: no lockfile in the manifest's own directory"}
+
 // ---- scanner: generated reports make zero network requests ----
 {"hook":"scanner","expect":"block","path":"scanner-reports/dashboard.html","content":"<script src=\"https://cdn.example.com/x.js\"></script>","why":"off-host script in a reports dir"}
 {"hook":"scanner","expect":"block","path":"reports/index.html","content":"<script src=\"https://cdn.example.com/x.js\"></script>","why":"D1: reports dir at repo root"}
