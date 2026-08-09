@@ -9,8 +9,8 @@
     {
       "name": "lean",
       "source": "./lean",
-      "description": "Build-less discipline: the YAGNI ladder, an over-engineering reviewer with a shortcut-debt ledger, and a codebase-convention reader. Ships a PostToolUse hook that warns when an edit makes a Python file measurably more complex.",
-      "version": "0.1.0",
+      "description": "Build-less discipline: the YAGNI ladder, an over-engineering reviewer with a shortcut-debt ledger, and a codebase-convention reader. Ships a PostToolUse hook that warns when an edit makes a Python file measurably more complex; that hook needs python3 on PATH and reports once if it is absent.",
+      "version": "0.2.0",
       "author": {
         "name": "Ishwar Swarnapudi"
       },
@@ -29,8 +29,8 @@
     {
       "name": "guardrails",
       "source": "./guardrails",
-      "description": "Personal engineering standards with a PreToolUse hook that mechanically blocks leading-underscore names, __main__ blocks, __all__, and unpinned dependencies across requirements.txt, pyproject.toml, and package.json.",
-      "version": "0.2.0",
+      "description": "Tiered engineering policy with a PreToolUse hook. Reproducibility rules (unpinned dependencies across requirements.txt, pyproject.toml, package.json) always apply; a preference tier (leading-underscore names, __main__ blocks, __all__) can be switched off. Supports an audit mode that reports without blocking.",
+      "version": "0.3.0",
       "author": {
         "name": "Ishwar Swarnapudi"
       },

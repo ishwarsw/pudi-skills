@@ -4,7 +4,7 @@
 // claim is worth nothing untested, and every defect this suite was born from
 // was a hook silently passing something it was written to block.
 
-const { execFileSync } = require("node:child_process");
+const { spawnSync } = require("node:child_process");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 
@@ -34,16 +34,23 @@ for (const testCase of cases) {
     tool_input: toolInput,
   });
 
-  let exitCode = 0;
-  try {
-    execFileSync("node", [scripts[testCase.hook]], { input: payload, stdio: "pipe" });
-  } catch (error) {
-    exitCode = error.status;
-  }
+  // spawnSync reports the exit code and stderr for a success as well as a
+  // failure, which an audit case needs — it exits 0 and still must have spoken.
+  // A case's `env` carries the hook's mode switches; the parent env is dropped
+  // so a mode exported in the developer's shell cannot change the result.
+  const run = spawnSync("node", [scripts[testCase.hook]], {
+    input: payload,
+    env: { PATH: process.env.PATH, ...(testCase.env || {}) },
+  });
+  const exitCode = run.status;
+  const stderr = run.stderr.toString();
 
   const expected = testCase.expect === "block" ? 2 : 0;
-  const passed = exitCode === expected;
-  if (!passed) failures.push({ testCase, exitCode, expected });
+  // An exit-0 case may still assert on the report text; that is the only way
+  // audit mode ("reports but does not block") is distinguishable from silence.
+  const reportedOk = !testCase.stderrHas || stderr.includes(testCase.stderrHas);
+  const passed = exitCode === expected && reportedOk;
+  if (!passed) failures.push({ testCase, exitCode, expected, stderr, reportedOk });
   process.stdout.write(
     `${passed ? "ok  " : "FAIL"} [${testCase.hook}] ${testCase.why}\n`
   );
@@ -55,5 +62,11 @@ for (const failure of failures) {
     `  FAIL ${failure.testCase.why}\n` +
       `       path=${failure.testCase.path} expected exit ${failure.expected}, got ${failure.exitCode}\n`
   );
+  if (!failure.reportedOk) {
+    process.stdout.write(
+      `       expected stderr to contain ${JSON.stringify(failure.testCase.stderrHas)}\n` +
+        `       got: ${JSON.stringify(failure.stderr.trim())}\n`
+    );
+  }
 }
 process.exit(failures.length === 0 ? 0 : 1);
