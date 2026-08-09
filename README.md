@@ -57,6 +57,14 @@ exact version (`requests==2.31.0`) or a range plus a lockfile you've committed
 — `"react": "^18.2.0"` next to a `package-lock.json` is fine, because the
 lockfile is what decides the version.
 
+## Requirements
+
+Claude Code ships with Node, which is all the hooks need — except one. `lean`'s
+complexity warning measures Python with the stdlib `ast` module, so it needs
+**`python3` on your PATH** to do anything. Without it, that one hook says so
+once and stays quiet; everything else in `lean` works normally. Nothing else in
+any plugin requires Python.
+
 ## ⚠️ These plugins can stop Claude from writing a file
 
 `guardrails`, `devops`, and `scanner` install **blocking hooks**. They run on

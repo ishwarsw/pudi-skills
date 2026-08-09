@@ -33,6 +33,23 @@ Versions are per plugin, listed under each entry.
 No rule changed what it *detects* in this release. Only the response to a
 detection is new.
 
+### lean 0.2.0
+
+**Fixed.**
+
+- The complexity hook was invoked as `python3 …/complexity-watch.py` directly
+  from `hooks.json`. On a machine without `python3` — stock Windows, or macOS
+  without the Xcode command line tools — that exits 127 and a PostToolUse
+  failure is invisible: the write already happened, so the hook was simply
+  dead and said nothing. It now runs through a Node wrapper
+  (`scripts/complexity-watch.js`) that reports the missing interpreter once per
+  session and stays quiet after. Node is guaranteed present, so the wrapper
+  itself cannot fail this way.
+
+The measurement is unchanged and still exact — it uses Python's `ast` module
+rather than counting keywords, which on a file with strings and comments
+containing `if`/`for`/`and` reads 2 where a regex reads 20.
+
 ### Repository
 
 **Added.**
