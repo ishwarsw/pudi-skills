@@ -57,6 +57,32 @@ exact version (`requests==2.31.0`) or a range plus a lockfile you've committed
 — `"react": "^18.2.0"` next to a `package-lock.json` is fine, because the
 lockfile is what decides the version.
 
+## ⚠️ These plugins can stop Claude from writing a file
+
+`guardrails`, `devops`, and `scanner` install **blocking hooks**. They run on
+every Write and Edit, before the file is touched, and can refuse it outright.
+Installing them delegates real authority over your editor — that is the point,
+and you should know you're doing it.
+
+Some of what `guardrails` blocks is universal (unpinned dependencies, secrets).
+Some is **Ishwar's personal taste** — no `_private` names, no `__main__`
+guards, no `__all__`. Those are perfectly normal Python; they're blocked here
+because he wants them blocked in his repos. The tiers are spelled out in
+[`docs/POLICY.md`](docs/POLICY.md).
+
+**Try it before you enable it.** Audit mode reports what it *would* have
+blocked and lets every write through:
+
+```bash
+PUDI_GUARDRAILS=audit          # report only, block nothing
+PUDI_GUARDRAILS_PREFERENCE=off # keep the dependency rules, drop the taste
+PUDI_GUARDRAILS=off            # disable the hook entirely
+```
+
+Point Claude at an unfamiliar repo in audit mode first, read the findings, then
+decide. An unrecognized value falls back to blocking — a typo won't quietly
+turn enforcement off.
+
 ## What's in the box
 
 | Plugin | Does | Always needed? |
@@ -69,5 +95,11 @@ lockfile is what decides the version.
 
 ## For developers
 
-How the hooks work, what was tested, known limits, and project history:
-[`docs/DETAILS.md`](docs/DETAILS.md).
+- What gets enforced, the three tiers, and which rule wins a conflict:
+  [`docs/POLICY.md`](docs/POLICY.md)
+- How the hooks work, what was tested, known limits, project history:
+  [`docs/DETAILS.md`](docs/DETAILS.md)
+- What changed and when: [`CHANGELOG.md`](CHANGELOG.md)
+
+Tests: `node test/run-hooks.js` and `node test/validate-structure.js`. Both run
+in CI on every push and pull request.
