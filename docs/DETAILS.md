@@ -298,3 +298,31 @@ A `remediate` skill was added to `scanner`: the other three find, present, and
 rank problems; this one fixes the safe ones and re-scans to prove the score
 moved, using the finding's existing `confidence` field as the apply-vs-plan
 gate instead of a new mechanism.
+
+`prd-writer` then swapped formats: thirteen numbered sections became seven
+(TL;DR, problem, user stories, success metrics, tiered requirements, non-goals,
+open questions). The trigger was a review that correctly identified four real
+gaps — no discovery of the repo's *own* PRD template, no explicit ban on
+fabricated customer quotes (only on invented org specifics), no timeframe
+required on a success metric, and inference not held apart from evidence. Those
+four are now in the skill. The rest of that review was rejected as duplicating
+`lean` and `guardrails`, which already carry YAGNI, scope discipline, and the
+no-invented-facts rule on every task.
+
+Four capabilities went with the old format, relocated rather than deleted, and
+worth knowing about before writing a PRD that needs them:
+
+| Dropped | Where it went |
+|---|---|
+| §4 assumption table (`Basis` / `If wrong`) | §7 open questions, each with its consequence |
+| §7 non-functional requirements | §5 Must Have, as measurable requirements |
+| `R1` / `NFR1` / `R1-AC1` traceability IDs | gone — requirements are now written so each *is* its own test |
+| §1 metadata, §12 rollout, §13 appendix | gone |
+
+The honest trade: the seven-section format is faster to write and read, and
+weaker for an initiative large enough that requirement-to-criterion traceability
+was doing real work. The three-persona review loop survived the swap intact,
+merged with a pass/fail mechanical sweep. Combined skill + template went from
+213 lines to 203 — a real but small reduction, because the sections that left
+were mostly scaffolding the seven remaining ones absorbed rather than dead
+weight. The format is lighter than the line count suggests.
